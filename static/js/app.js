@@ -110,9 +110,12 @@ function renderCharacters(characters) {
         const item = document.createElement('div');
         item.className = `char-item ${topClass}`;
         item.innerHTML = `
-            <div class="char-info">
-                <span class="char-name">${c.character}</span>
-                <span class="char-stats">出场: ${c.played} 次</span>
+            <div style="display: flex; align-items: center; gap: 0.8rem;">
+                <img src="icons/${c.character}.png" class="char-icon" onerror="this.style.display='none'" alt="">
+                <div class="char-info">
+                    <span class="char-name">${c.character}</span>
+                    <span class="char-stats">出场: ${c.played} 次</span>
+                </div>
             </div>
             <div class="char-winrate ${c.win_rate > 50 ? 'text-blue' : 'text-red'}">
                 胜率 ${c.win_rate}%
@@ -135,6 +138,11 @@ function updateHallOfFame(players, characters) {
 
     if (characters.length > 0) {
         let metaChar = characters.sort((a, b) => b.played - a.played)[0];
-        document.getElementById('most-played-char').innerText = metaChar.character;
+        document.getElementById('most-played-char').innerHTML = `
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.2rem;">
+                <img src="icons/${metaChar.character}.png" class="char-icon-small" onerror="this.style.display='none'" alt="">
+                <span>${metaChar.character}</span>
+            </div>
+        `;
     }
 }

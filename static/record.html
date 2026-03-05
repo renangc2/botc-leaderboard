@@ -28,7 +28,11 @@
             <li class="active"><a href="record.html"><i class="fa-solid fa-feather-pointed"></i> 录入对局</a></li>
             <li><a href="history.html"><i class="fa-solid fa-clock-rotate-left"></i> 历史记录</a></li>
         </ul>
+        <div class="nav-footer" style="display: flex; align-items: center; padding-top: 1rem; margin-top: auto;">
+            <i class="fa-solid fa-music audio-control" id="bgm-toggle" title="开关氛围音乐"></i>
+        </div>
     </nav>
+    <audio id="bgm-audio" src="audio/bgm.mp3" loop preload="auto"></audio>
 
     <main class="main-content">
         <header class="top-header">
@@ -111,6 +115,7 @@
         </div>
     </main>
 
+    <script src="js/audio.js"></script>
     <script src="js/record.js"></script>
 </body>
 
