@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Record Match - BOTC</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cinzel:wght@600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="dashboard-body">
+    <div class="background-effects">
+        <div class="glow red-glow"></div>
+        <div class="glow purple-glow"></div>
+    </div>
+
+    <nav class="sidebar">
+        <div class="logo">
+            <i class="fa-solid fa-clock"></i>
+            <h1>BOTC <span class="accent">Stats</span></h1>
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html"><i class="fa-solid fa-chart-line"></i> 数据看板</a></li>
+            <li class="active"><a href="record.html"><i class="fa-solid fa-feather-pointed"></i> 录入对局</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <header class="top-header">
+            <h2>复盘魔法书 (Record Match)</h2>
+        </header>
+
+        <div class="card">
+            <form id="record-form">
+                <div class="dashboard-grid" style="gap: 2rem;">
+                    <!-- 左侧：基础信息 -->
+                    <div style="grid-column: span 1;">
+                        <h3 class="mb-4"><i class="fa-solid fa-scroll text-gold"></i> 对局信息</h3>
+                        <div class="form-group mt-3">
+                            <label>使用剧本 (Script)</label>
+                            <select id="match-script" class="form-control" required>
+                                <option value="暗流涌动 (Trouble Brewing)">暗流涌动 (Trouble Brewing)</option>
+                                <option value="黯月初升 (Bad Moon Rising)">黯月初升 (Bad Moon Rising)</option>
+                                <option value="紫云密教 (Sects & Violets)">紫云密教 (Sects & Violets)</option>
+                                <option value="自定义 (Custom)">自定义 (Custom)</option>
+                            </select>
+                        </div>
+                        <div class="form-group mt-3">
+                            <label>说书人 (Storyteller)</label>
+                            <input type="text" id="match-storyteller" class="form-control" required
+                                placeholder="请输入说书人名称">
+                        </div>
+                        <div class="form-group mt-3">
+                            <label>获胜阵营 (Winning Team)</label>
+                            <select id="match-winner" class="form-control" required>
+                                <option value="good">正义盟军 (Good)</option>
+                                <option value="bad">邪恶阵营 (Evil)</option>
+                            </select>
+                        </div>
+                        <div class="form-group mt-4">
+                            <label>管理员钥匙 (Admin Password)</label>
+                            <input type="password" id="match-password" class="form-control" required
+                                placeholder="默认：botc">
+                        </div>
+                    </div>
+
+                    <!-- 右侧：玩家列表 -->
+                    <div style="grid-column: span 2;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h3><i class="fa-solid fa-users text-purple"></i> 参与玩家</h3>
+                            <button type="button" class="btn btn-primary"
+                                style="padding: 0.5rem 1rem; font-size: 0.9rem" onclick="addPlayerRow()">
+                                <i class="fa-solid fa-plus"></i> 添加玩家
+                            </button>
+                        </div>
+
+                        <div class="table-container">
+                            <table class="data-table" id="players-table">
+                                <thead>
+                                    <tr>
+                                        <th>玩家昵称</th>
+                                        <th>所选角色</th>
+                                        <th>初始阵营</th>
+                                        <th>最终阵营</th>
+                                        <th>存活状态</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="players-list">
+                                    <!-- 动态添加行 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1.5rem; text-align: right;">
+                    <button type="submit" class="btn btn-primary btn-large">
+                        <i class="fa-solid fa-save"></i> 封印记录 (Save)
+                    </button>
+                    <div id="form-msg" style="margin-top: 1rem; font-weight: bold;"></div>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script src="js/record.js"></script>
+</body>
+
+</html>
