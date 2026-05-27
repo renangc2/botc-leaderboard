@@ -1,84 +1,278 @@
-const API_BASE = 'http://localhost:8000';
-let matchToDelete = null;
+/**
+ * BOTC Stats - 歷史紀錄進階邏輯
+ * 修正：針對特定身分標籤採用「完全匹配」邏輯，確保統計數據精準。
+ */
 
-document.addEventListener('DOMContentLoaded', () => {
-    fetchHistory();
-});
+{
+    let allMatches = [];
+    let currentFilterType = 'all'; 
+    let currentKeyword = '';
 
-async function fetchHistory() {
-    try {
-        const response = await fetch(`${API_BASE}/matches/`);
-        if (!response.ok) throw new Error('Failed to fetch');
-
-        const matches = await response.json();
-        const tbody = document.getElementById('history-tbody');
-        tbody.innerHTML = '';
-
-        if (matches.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="loading">时空长河中暂时没有记录。</td></tr>`;
+    window.viewFullLog = (id) => {
+        const match = allMatches.find(m => m.id === id);
+        // 檢查是否有 replay_log 欄位
+        if (!match || !match.replay_log) {
+            alert("此對局尚未上傳詳細覆盤紀錄");
             return;
         }
 
-        matches.forEach(m => {
-            const tr = document.createElement('tr');
-            const dateStr = new Date(m.date).toLocaleString('zh-CN');
-            const winTeamStr = m.winning_team === 'good' ? '<span class="text-blue">正义盟军</span>' : '<span class="text-red">邪恶阵营</span>';
+        // 存入 sessionStorage
+        sessionStorage.setItem('current_replay_data', JSON.stringify({
+            title: `${match.script} (${match.date})`,
+            content: match.replay_log
+        }));
 
-            tr.innerHTML = `
-                <td>${dateStr}</td>
-                <td style="font-weight: bold;">${m.script}</td>
-                <td>${m.storyteller}</td>
-                <td>${winTeamStr}</td>
-                <td>${m.players.length} 人</td>
-                <td>
-                    <button class="btn" style="padding: 0.4rem 0.8rem; background: rgba(230,57,70,0.2); color: #ff4d4d;" onclick="openDeleteModal(${m.id})">
-                        <i class="fa-solid fa-trash"></i> 删除
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
+        if (window.loadPage) window.loadPage('view-replay');
+    };
+    const initHistory = async () => {
+        const container = document.getElementById('history-list-area');
+        const apiBase = window.API_BASE || "";
 
-    } catch (err) {
-        console.error(err);
-        document.getElementById('history-tbody').innerHTML = `<tr><td colspan="6" class="loading text-red">获取历史失败。</td></tr>`;
-    }
-}
-
-function openDeleteModal(matchId) {
-    matchToDelete = matchId;
-    document.getElementById('delete-pw').value = '';
-    document.getElementById('delete-modal').style.display = 'flex';
-}
-
-function closeDeleteModal() {
-    matchToDelete = null;
-    document.getElementById('delete-modal').style.display = 'none';
-}
-
-async function confirmDelete() {
-    const pw = document.getElementById('delete-pw').value;
-    if (!pw) {
-        alert("必须输入密码！");
-        return;
-    }
-
-    try {
-        const res = await fetch(`${API_BASE}/matches/${matchToDelete}`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password: pw })
-        });
-
-        if (res.ok) {
-            closeDeleteModal();
-            fetchHistory(); // 刷新列表
-        } else {
-            const err = await res.json();
-            alert(`删除失败: ${err.detail}`);
+        try {
+            if (container) {
+                container.innerHTML = `<div style="text-align:center; padding:5rem; color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> 正在召喚歷史紀錄...</div>`;
+            }
+            
+            const resp = await fetch(`${apiBase}/api/history`);
+            if (!resp.ok) throw new Error("讀取失敗");
+            allMatches = await resp.json();
+            
+            applyLogic(); 
+        } catch (err) {
+            if (container) {
+                container.innerHTML = `<div style="text-align:center; color:var(--accent-red); padding:5rem;">讀取錯誤：${err.message}</div>`;
+            }
         }
-    } catch (err) {
-        alert("网络请求失败");
-        console.error(err);
-    }
+    };
+
+    window.handleSearch = () => {
+        const inputEl = document.getElementById('history-search');
+        if (!inputEl) return;
+        currentKeyword = inputEl.value.trim().toLowerCase();
+        const tabsEl = document.getElementById('filter-tabs-container');
+        if (tabsEl) tabsEl.style.display = currentKeyword ? 'flex' : 'none';
+        applyLogic();
+    };
+
+    window.setFilterType = (type) => {
+        currentFilterType = type;
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('data-type') === type);
+        });
+        applyLogic();
+    };
+
+    const applyLogic = () => {
+        const titleEl = document.getElementById('summary-title');
+        const hintEl = document.getElementById('search-hint');
+        if (!titleEl || !hintEl) return;
+
+        let filtered = [];
+
+        if (!currentKeyword) {
+            filtered = allMatches;
+            titleEl.innerText = "總對局紀錄回顧";
+            hintEl.innerText = "顯示所有魔典中記載的對局";
+        } else {
+            const labelMap = { 'all': '全局搜尋', 'player': '作為玩家', 'storyteller': '作為說書人', 'location': '作為地點', 'script': '作為劇本','character': '出現角色' };
+            titleEl.innerText = `「${currentKeyword}」的統計結果`;
+            hintEl.innerText = `目前的篩選條件：${labelMap[currentFilterType]}`;
+            
+            filtered = allMatches.filter(m => {
+                // 全域搜尋使用 .includes (模糊匹配)
+                const sScript = m.script.toLowerCase().includes(currentKeyword);
+                const sLoc = (m.location || "").toLowerCase().includes(currentKeyword);
+                const sST = (m.storyteller || "").toLowerCase().includes(currentKeyword);
+                const sPlayers = m.players.some(p => p.player_name.toLowerCase().includes(currentKeyword));
+                const sChar = m.players.some(p => 
+                    (p.initial_character && p.initial_character.toLowerCase().includes(currentKeyword)) ||
+                    (p.final_character && p.final_character.toLowerCase().includes(currentKeyword))
+                );
+                if (currentFilterType === 'all') return sScript || sLoc || sST || sPlayers || sChar;
+                
+                // 🟢 關鍵修正：特定身分搜尋改用 === (完全匹配)，避免「魚」搜到「熱帶魚」
+                
+                if (currentFilterType === 'player') return m.players.some(p => p.player_name.toLowerCase() === currentKeyword);
+                // if (currentFilterType === 'storyteller') return (m.storyteller || "").toLowerCase() === currentKeyword;
+                if (currentFilterType === 'storyteller') return (m.storyteller || "").toLowerCase().includes(currentKeyword);
+                if (currentFilterType === 'location') return (m.location || "").toLowerCase().includes(currentKeyword);
+                if (currentFilterType === 'script') return m.script.toLowerCase().includes(currentKeyword);
+                if (currentFilterType === 'character') return sChar;
+                return false;
+            });
+        }
+
+        updateStatsUI(filtered);
+        renderHistoryList(filtered);
+    };
+
+    const updateStatsUI = (matches) => {
+        const total = matches.length;
+        const totalEl = document.getElementById('stat-total');
+        
+        if (!totalEl) return;
+
+        if (total === 0) {
+            totalEl.innerText = 0;
+            document.getElementById('stat-good-rate').innerText = "0%";
+            document.getElementById('stat-evil-rate').innerText = "0%";
+            document.getElementById('stat-top-location').innerText = "-";
+            document.getElementById('stat-top-role').innerText = "-";
+            return;
+        }
+
+        let goodWins = 0, evilWins = 0;
+        let goodTotal = 0, evilTotal = 0;
+        const locations = {}, roles = {};
+
+        matches.forEach(m => {
+            // 判斷勝率計算視角
+                 if (currentFilterType === 'character' && currentKeyword) {
+                const targetPlayers = m.players.filter(p => 
+                    (p.initial_character && p.initial_character.toLowerCase().includes(currentKeyword)) ||
+                    (p.final_character && p.final_character.toLowerCase().includes(currentKeyword))
+                );
+
+                targetPlayers.forEach(p => {
+                    const isWinner = p.alignment === m.winning_team;
+                    if (p.alignment === 'good') {
+                        goodTotal++;
+                        if (isWinner) goodWins++;
+                    } else {
+                        evilTotal++;
+                        if (isWinner) evilWins++;
+                    }
+                });
+            } 
+            else if (currentFilterType === 'player' && currentKeyword) {
+                // 這裡也必須使用精確匹配
+                const p = m.players.find(p => p.player_name.toLowerCase() === currentKeyword);
+                if (p) {
+                     const isWinner = p.alignment === m.winning_team;
+                    // 分開統計該陣營的總場次
+                    if (p.alignment === 'good') {
+                        goodTotal++;
+                        if (isWinner) goodWins++;
+                    } else {
+                        evilTotal++;
+                        if (isWinner) evilWins++;
+                    }
+                    roles[p.final_character] = (roles[p.final_character] || 0) + 1;
+                }
+            } else {
+                if (m.winning_team === 'good') goodWins++; else evilWins++;
+                m.players.forEach(p => {
+                    if (p.final_character) {
+                        roles[p.final_character] = (roles[p.final_character] || 0) + 1;
+                    }
+                });
+            }
+            if (m.location) locations[m.location] = (locations[m.location] || 0) + 1;
+        });
+
+        totalEl.innerText = total;
+
+     if ((currentFilterType === 'player' || currentFilterType === 'character') && currentKeyword) {
+             document.getElementById('stat-good-rate').innerText = Math.round((goodWins / goodTotal) * 100) + "%";
+             document.getElementById('stat-evil-rate').innerText = Math.round((evilWins / evilTotal) * 100) + "%";
+        } else {
+            document.getElementById('stat-good-rate').innerText = Math.round((goodWins / total) * 100) + "%";
+            document.getElementById('stat-evil-rate').innerText = Math.round((evilWins / total) * 100) + "%";
+        }
+
+        
+        //document.getElementById('stat-good-rate').innerText = Math.round((goodWins / goodTotal) * 100) + "%";
+        //document.getElementById('stat-evil-rate').innerText = Math.round((evilWins / evilTotal) * 100) + "%";
+        const topLoc = Object.entries(locations).sort((a,b)=>b[1]-a[1])[0]?.[0] || "未知";
+        const sortedRoles = Object.entries(roles).sort((a,b)=>b[1]-a[1]);
+        const topRole = sortedRoles[0]?.[0] || "暫無";
+        document.getElementById('stat-top-location').innerText = topLoc;
+        document.getElementById('stat-top-role').innerText = topRole;
+    };
+
+    const renderHistoryList = (matches) => {
+        const container = document.getElementById('history-list-area');
+        if (!container) return;
+
+        container.innerHTML = matches.map(m => {
+            const d = new Date(m.date);
+            const isGood = m.winning_team === 'good';
+            const playerNames = m.players ? m.players.map(p => p.player_name).join('、') : "";
+
+            return `
+                <div class="match-history-card" id="match-card-${m.id}">
+                    <div class="match-main-row" onclick="toggleMatchDetails(${m.id})">
+                        <div class="match-date-box">
+                            <span class="year-label">${d.getFullYear()}</span>
+                            <span class="date-label">${d.getMonth()+1}/${d.getDate()}</span>
+                        </div>
+                        <div class="match-info-content">
+                            <div class="info-row-top">
+                                <h4 class="match-title">${m.script}</h4>
+                                <div class="meta-tags">
+                                    <span><i class="fa-solid fa-location-dot"></i> ${m.location || '未知'}</span>
+                                    <span><i class="fa-solid fa-user-tie"></i> ${m.storyteller || '未知'}</span>
+                                    ${m.uploaded_by ? `<span><i class="fa-solid fa-cloud-arrow-up"></i> 上傳人：${m.uploaded_by}</span>` : ''}
+                                    <span><i class="fa-solid fa-users"></i> ${m.players.length} 人</span>
+                                    ${m.replay_log ? `
+                                    <button class="view-log-btn" onclick="event.stopPropagation(); viewFullLog(${m.id})">
+                                    <i class="fa-solid fa-book-open"></i> 查閱覆盤
+                                    </button>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            <div class="info-row-bottom">
+                                <i class="fa-solid fa-id-card-clip" style="font-size:0.7rem; color:var(--accent-gold); opacity:0.6; margin-top:2px;"></i>
+                                <span class="player-preview-text">${playerNames}</span>
+                            </div>
+                        </div>
+                        <div class="match-result-badge ${isGood ? 'res-good' : 'res-evil'}">
+                            ${isGood ? '善良獲勝' : '邪惡獲勝'}
+                        </div>
+                        <i class="fa-solid fa-chevron-down toggle-icon"></i>
+                    </div>
+                    
+                    <div class="match-details-panel" id="detail-panel-${m.id}">
+                        <div class="horizontal-detail-bar">
+                            <table class="detail-table">
+                                <thead>
+                                    <tr>
+                                        <th>座位</th>
+                                        <th>玩家暱稱</th>
+                                        <th>初始角色</th>
+                                        <th>最終角色</th>
+                                        <th>最終陣營</th>
+                                        <th>存活狀態</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${m.players.map((p,idx) => `
+                                        <tr>
+                                            <td style="color:var(--accent-gold); font-family:monospace;">${p.seat_number || (idx + 1)}</td>
+                                            <td style="font-weight:bold; color:#fff;">${p.player_name}</td>
+                                            <td>${p.initial_character}</td>
+                                            <td>${p.final_character}</td>
+                                            <td class="${p.alignment === 'good' ? 'text-blue' : 'text-red'}" style="font-weight:bold;">${p.alignment === 'good' ? '善良' : '邪惡'}</td>
+                                            <td style="${p.survived ? 'color:#a8dadc;' : 'color:#e63946; opacity:0.6;'}">${p.survived ? '存活' : '💀 死亡'}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    };
+
+    window.toggleMatchDetails = (id) => {
+        const panel = document.getElementById(`detail-panel-${id}`);
+        const card = document.getElementById(`match-card-${id}`);
+        if (!panel || !card) return;
+        const isOpen = panel.style.display === 'block';
+        panel.style.display = isOpen ? 'none' : 'block';
+        card.classList.toggle('open', !isOpen);
+    };
+
+    initHistory();
 }

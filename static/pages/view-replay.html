@@ -1,0 +1,173 @@
+<div class="replay-master-container">
+    <header class="replay-magic-header">
+        <div class="title-wrapper">
+            <h2 id="replay-title" class="cinzel-font">正在召喚魔典...</h2>
+            <div class="decorative-line">
+                <span class="dot"></span>
+                <span class="line"></span>
+                <span class="dot"></span>
+            </div>
+            <p class="subtitle">拉普拉斯 · 血染魔典正式卷宗</p>
+        </div>
+        <button class="btn-return-magic" onclick="loadPage('history')">
+            <i class="fa-solid fa-book-bookmark"></i> 返回歷史紀錄
+        </button>
+    </header>
+
+    <div class="replay-scroll-paper">
+        <pre id="replay-content" class="botc-classic-log"></pre>
+    </div>
+</div>
+
+<script>
+    // 🟢 核心修正：加入讀取邏輯
+    (function() {
+        // 從 sessionStorage 抓取由 history.js 存入的資料
+        const rawData = sessionStorage.getItem('current_replay_data');
+        
+        if (!rawData) {
+            document.getElementById('replay-title').innerText = "找不到魔典紀錄";
+            document.getElementById('replay-content').innerText = "請嘗試從歷史紀錄頁面重新點擊「查閱覆盤」。";
+            return;
+        }
+
+        try {
+            const data = JSON.parse(rawData);
+            
+            // 渲染標題與內容
+            if (data.title) {
+                document.getElementById('replay-title').innerText = data.title;
+            }
+            if (data.content) {
+                document.getElementById('replay-content').innerText = data.content;
+            }
+        } catch (e) {
+            console.error("解析紀錄資料失敗:", e);
+            document.getElementById('replay-title').innerText = "紀錄格式錯誤";
+        }
+    })();
+</script>
+
+<style>
+    /* 延續之前的精緻樣式 */
+    .replay-master-container {
+        padding: 75px 1.5rem 2rem;
+        max-width: 900px;
+        margin: 0 auto;
+        height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+    }
+
+    .replay-magic-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1.5rem;
+        flex-shrink: 0;
+    }
+
+    .cinzel-font {
+        font-family: 'Cinzel', serif;
+        color: var(--accent-gold);
+        font-size: 1.6rem;
+        margin: 0;
+        letter-spacing: 2px;
+        text-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+    }
+
+    .decorative-line {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 8px 0;
+    }
+    .decorative-line .line { height: 1px; flex: 1; background: linear-gradient(90deg, transparent, var(--accent-gold), transparent); opacity: 0.5; }
+    .decorative-line .dot { width: 4px; height: 4px; background: var(--accent-gold); transform: rotate(45deg); }
+
+    .subtitle { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 3px; margin: 0; }
+
+    .btn-return-magic {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(212, 175, 55, 0.3);
+        color: var(--accent-gold);
+        padding: 8px 16px;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .btn-return-magic:hover { background: var(--accent-gold); color: #000; box-shadow: 0 0 20px rgba(212, 175, 55, 0.4); }
+
+  /* 1. 確保最外層容器不會產生水平捲軸 */
+    .replay-master-container {
+        padding: 75px 1rem 2rem; /* 左右間距縮小到 1rem  */
+        max-width: 100%; /* 確保不超過螢幕 */
+        width: 100vw;
+        height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+        overflow-x: hidden; /* 🔴 強制隱藏水平溢出 */
+    }
+
+    /* 2. 修正標題列在窄螢幕的排版 */
+    .replay-magic-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap; /* 🔴 關鍵：允許按鈕與標題在極窄螢幕換行 */
+        gap: 10px;
+        margin-bottom: 1rem;
+        width: 100%;
+    }
+
+    /* 3. 修正紙張容器：縮小內距並限制寬度  */
+    .replay-scroll-paper {
+        background: #0d0d12;
+        border: 1px solid rgba(255,255,255,0.03);
+        border-radius: 12px;
+        padding: 1.5rem; /* 🔴 從 2.5rem 縮小，給文字更多空間 */
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden; /* 🔴 內部也禁止水平捲動 */
+        box-sizing: border-box;
+        width: 100%; /* 🔴 強制寬度 100% */
+    }
+
+    /* 4. 強化文字換行邏輯  */
+    .botc-classic-log {
+        font-family: 'Inter', 'Monaco', monospace;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        color: #d1d1d1;
+        white-space: pre-wrap !important; /* 🔴 強制保留格式但換行 */
+        word-break: break-all !important; /* 🔴 強制長字串（如玩家名）斷行 */
+        overflow-wrap: break-word;
+        margin: 0;
+        width: 100%;
+    }
+/* --- 這些寫在 @media (max-width: 767px) 裡面 --- */
+
+@media (max-width: 767px) {
+    .replay-master-container {
+        padding: 70px 0.5rem 1rem; /* 🔴 手機版間距縮小，預留 70px 給 Sidebar */
+    }
+
+    .replay-scroll-paper {
+        padding: 1rem; /* 🔴 手機版內距縮小，不然紙張會太窄 */
+    }
+
+    .cinzel-font {
+        font-size: 1.1rem !important; /* 🔴 防止標題太長擠壓到返回按鈕 */
+    }
+
+    .botc-classic-log {
+        font-size: 0.8rem; /* 🔴 讓文字小一點，適合在窄螢幕閱讀 */
+    }
+}
+</style>

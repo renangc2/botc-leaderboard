@@ -1,0 +1,106 @@
+<header class="top-header">
+    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+        <h2 style="font-family: 'Cinzel', serif; letter-spacing: 2px;">數據看板 (DASHBOARD)</h2>
+        <span style="font-size: 0.75rem; color: var(--text-muted); background: rgba(255,255,255,0.05); padding: 5px 15px; border-radius: 20px; border: 1px solid var(--border-color);">
+            <i class="fa-solid fa-clock-rotate-left"></i> 即時數據同步中
+        </span>
+    </div>
+</header>
+
+<div class="dashboard-wrapper" style="max-width: 1500px; margin: 0 auto; padding: 0 1rem 80px 1rem;">
+    
+    <!-- 🟢 頂部三格總覽 (強制橫排) -->
+    <div class="stats-overview-row">
+        <div class="card stat-card-mini" style="border-left: 4px solid var(--accent-gold);">
+            <span class="mini-label">總登記對局</span>
+            <div class="mini-value" id="global-total">-</div>
+            <i class="fa-solid fa-scroll card-bg-icon"></i>
+        </div>
+
+        <div class="card stat-card-mini" style="border-left: 4px solid var(--accent-blue);">
+            <span class="mini-label">善良總勝率 (場數)</span>
+            <div class="mini-value text-blue" id="global-good">-</div>
+            <i class="fa-solid fa-shield-halved card-bg-icon"></i>
+        </div>
+
+        <div class="card stat-card-mini" style="border-left: 4px solid var(--accent-red);">
+            <span class="mini-label">邪惡總勝率 (場數)</span>
+            <div class="mini-value text-red" id="global-evil">-</div>
+            <i class="fa-solid fa-skull card-bg-icon"></i>
+        </div>
+    </div>
+
+    <!-- 🟢 下方地點卡片容器 -->
+    <div class="section-divider">
+        <i class="fa-solid fa-location-dot"></i> 地點分佈紀錄
+    </div>
+    
+    <div id="location-cards-container" class="location-grid">
+        <!-- JS 動態插入地點卡片 -->
+        <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 4rem;">
+            <i class="fa-solid fa-spinner fa-spin"></i> 正在召喚各界魔典...
+        </div>
+    </div>
+</div>
+
+<style>
+    /* 頂部橫排控制 */
+    .stats-overview-row { 
+        display: grid; 
+        grid-template-columns: repeat(3, 1fr); 
+        gap: 1.5rem; 
+        margin-bottom: 2rem;
+    }
+
+    .stat-card-mini { position: relative; padding: 1.5rem !important; overflow: hidden; }
+    .mini-label { display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 5px; }
+    .mini-value { font-size: 2.2rem; font-weight: 900; font-family: 'Inter', sans-serif; }
+    .card-bg-icon { position: absolute; right: -10px; bottom: -10px; font-size: 5rem; opacity: 0.03; transform: rotate(-15deg); }
+
+    /* 分隔標題 */
+    .section-divider { 
+        margin: 2rem 0 1.5rem 0; 
+        color: var(--accent-gold); 
+        font-family: 'Cinzel', serif; 
+        font-weight: bold; 
+        display: flex; 
+        align-items: center; 
+        gap: 10px;
+        font-size: 1.1rem;
+    }
+    .section-divider::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--border-color), transparent); }
+
+    /* 地點卡片網格 */
+    .location-grid { 
+        display: grid; 
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); 
+        gap: 1.5rem; 
+    }
+
+    /* 地點卡片內部設計 (紫色發光) */
+    .location-card {
+        border-top: 4px solid var(--accent-purple) !important;
+        padding: 0 !important;
+        overflow: hidden;
+    }
+    .loc-header { padding: 1.2rem; background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+    .loc-name { font-weight: 800; font-size: 1.1rem; color: var(--text-main); }
+    .loc-total-badge { background: var(--accent-purple); color: #fff; padding: 2px 10px; border-radius: 50px; font-size: 0.7rem; font-weight: bold; }
+    
+    .loc-content { padding: 1.5rem; display: flex; align-items: center; justify-content: space-around; gap: 1rem; }
+    .loc-stat-item { text-align: center; flex: 1; }
+    .loc-stat-label { display: block; font-size: 0.65rem; color: var(--text-muted); margin-bottom: 5px; font-weight: bold; }
+    .loc-stat-value { font-size: 1.8rem; font-weight: 900; }
+    .loc-stat-games { font-size: 0.75rem; opacity: 0.5; margin-left: 4px; }
+
+    /* 拉鋸條 */
+    .loc-bar-container { height: 6px; background: rgba(255,255,255,0.05); margin: 0 1.5rem 1.5rem 1.5rem; border-radius: 50px; overflow: hidden; display: flex; }
+    .bar-segment { height: 100%; transition: width 1s ease-in-out; }
+
+    @media (max-width: 1000px) {
+        .stats-overview-row { grid-template-columns: 1fr; }
+        .location-grid { grid-template-columns: 1fr; }
+    }
+</style>
+
+<script src="/js/dashboard.js"></script>
